@@ -5,48 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Family List" />
-  <meta name="theme-color" content="#0E4C63" />
+  <meta name="theme-color" content="#2FA84F" />
   <title>Family List</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
   <style>
     :root{
-      --bg-deep:#021422;
-      --bg-mid:#073347;
-      --bg-top:#0E4C63;
-      --amber:#F2A93B;
-      --amber-deep:#C77F1A;
-      --ink:#F2F7F9;
-      --muted:#9DB8C2;
-      --panel:rgba(255,255,255,.06);
-      --panel-border:rgba(255,255,255,.14);
-      --navy:#0B2530;
-      --green:#5FD08A;
-      --red:#FF6B6B;
+      --bg:#FFFFFF;
+      --bg-soft:#F6FAF3;
+      --card:#FFFFFF;
+      --ink:#1C2B21;
+      --muted:#5F7263;
+      --faint:#9DB0A1;
+      --border:#E2EBDF;
+      --green:#2FA84F;
+      --green-dark:#237A3B;
+      --green-soft:#E4F5E9;
+      --red:#E4572E;
+      --red-soft:#FDEBE4;
+      --orange:#F5A623;
+      --orange-soft:#FDF3E0;
+      --purple:#7B5EA7;
+      --purple-soft:#EFE9F7;
+      --blue:#2D9CDB;
+      --blue-soft:#E5F4FC;
     }
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    html{ background:var(--bg-top); }
+    html{ background:var(--green); }
     body{
       margin:0; padding:0;
       min-height:100vh;
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
       color:var(--ink);
-      background:
-        radial-gradient(circle at 15% 0%, rgba(43,156,189,.12), transparent 40%),
-        radial-gradient(circle at 100% 15%, rgba(29,152,193,.20), transparent 45%),
-        linear-gradient(170deg, var(--bg-top), var(--bg-mid) 50%, var(--bg-deep));
-      background-attachment:fixed;
+      background:var(--bg-soft);
       padding-bottom:110px;
+      font-size:17px;
     }
     /* ── Top bar ── */
     .topbar{
       position:sticky; top:0; z-index:100;
-      background:rgba(8,28,38,.92);
-      backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-      border-bottom:3px solid var(--amber);
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+      border-bottom:3px solid var(--green);
       padding-top:env(safe-area-inset-top);
+      box-shadow:0 2px 12px rgba(28,43,33,.06);
     }
     .topbar-inner{
       display:flex; align-items:center; justify-content:space-between;
@@ -54,196 +59,279 @@
     }
     .brand{ display:flex; align-items:center; gap:10px; }
     .brand-icon{
-      width:42px; height:42px; border-radius:14px;
-      background:linear-gradient(135deg, var(--amber), var(--amber-deep));
+      width:44px; height:44px; border-radius:14px;
+      background:linear-gradient(135deg, var(--green), var(--green-dark));
       display:flex; align-items:center; justify-content:center;
-      font-size:24px; box-shadow:0 4px 14px rgba(242,169,59,.35);
+      font-size:26px; box-shadow:0 4px 14px rgba(47,168,79,.35);
     }
-    .brand h1{ margin:0; font-size:20px; font-weight:800; letter-spacing:.3px; }
-    .brand small{ display:block; font-size:11px; color:var(--muted); font-weight:600; }
+    .brand h1{ margin:0; font-size:21px; font-weight:800; letter-spacing:.3px; color:var(--ink); }
+    .brand small{ display:block; font-size:11px; color:var(--muted); font-weight:700; }
     .who-chip{
       display:flex; align-items:center; gap:8px;
-      background:var(--panel); border:1px solid var(--panel-border);
-      border-radius:999px; padding:8px 14px; font-size:14px; font-weight:700;
+      background:var(--bg-soft); border:1px solid var(--border);
+      border-radius:999px; padding:8px 14px; font-size:15px; font-weight:700;
       color:var(--ink); cursor:pointer;
     }
     .sync-dot{ width:10px; height:10px; border-radius:50%; background:var(--green); flex:none; }
-    .sync-dot.syncing{ background:var(--amber); animation:pulse 1s infinite; }
+    .sync-dot.syncing{ background:var(--orange); animation:pulse 1s infinite; }
     .sync-dot.offline{ background:var(--red); }
     @keyframes pulse{ 50%{ opacity:.4; } }
+    .icon-btn{
+      background:var(--bg-soft); border:1px solid var(--border); color:var(--ink);
+      width:44px; height:44px; border-radius:14px; font-size:20px; cursor:pointer; flex:none;
+      display:flex; align-items:center; justify-content:center;
+    }
     /* ── List switcher ── */
     .listbar{
-      display:flex; gap:8px; overflow-x:auto; padding:12px 16px 4px;
+      display:flex; gap:8px; overflow-x:auto; padding:4px 16px 12px;
       -webkit-overflow-scrolling:touch; scrollbar-width:none;
     }
     .listbar::-webkit-scrollbar{ display:none; }
     .list-chip{
-      flex:none; border:1px solid var(--panel-border); background:var(--panel);
+      flex:none; border:1px solid var(--border); background:var(--card);
       color:var(--ink); border-radius:999px; padding:10px 18px;
-      font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
+      font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap;
+      box-shadow:0 1px 4px rgba(28,43,33,.05);
     }
-    .list-chip.on{ background:var(--amber); border-color:var(--amber); color:#1a1206; }
-    .list-chip.new{ border-style:dashed; color:var(--amber); }
+    .list-chip.on{ background:var(--green); border-color:var(--green); color:#fff; }
+    .list-chip.new{ border-style:dashed; color:var(--green); border-color:var(--green); }
     /* ── Content ── */
     .wrap{ padding:12px 16px 0; max-width:720px; margin:0 auto; }
     .list-head{
-      background:var(--panel); border:1px solid var(--panel-border);
-      border-radius:20px; padding:16px; margin-bottom:14px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:20px; padding:16px; margin-bottom:12px;
+      box-shadow:0 2px 10px rgba(28,43,33,.06);
     }
-    .list-head h2{ margin:0 0 2px; font-size:22px; font-weight:800; }
-    .list-head .store{ color:var(--muted); font-size:13px; font-weight:600; margin:0 0 10px; }
-    .progress{ height:8px; border-radius:99px; background:rgba(255,255,255,.12); overflow:hidden; margin:8px 0 6px; }
-    .progress > div{ height:100%; background:linear-gradient(90deg, var(--amber), var(--amber-deep)); border-radius:99px; transition:width .3s; }
-    .list-meta{ display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted); font-weight:600; }
-    .link-btn{ background:none; border:0; color:var(--red); font-size:12px; font-weight:700; cursor:pointer; padding:6px; }
-    .link-btn.amber{ color:var(--amber); }
+    .list-head h2{ margin:0 0 2px; font-size:23px; font-weight:800; }
+    .list-head .store{ color:var(--muted); font-size:14px; font-weight:600; margin:0 0 10px; }
+    .progress{ height:10px; border-radius:99px; background:#EDF3EA; overflow:hidden; margin:8px 0 6px; }
+    .progress > div{ height:100%; background:linear-gradient(90deg, var(--green), var(--green-dark)); border-radius:99px; transition:width .3s; }
+    .budget-bar{ height:10px; border-radius:99px; background:#EDF3EA; overflow:hidden; margin:8px 0 6px; }
+    .budget-bar > div{ height:100%; background:linear-gradient(90deg, var(--orange), #E08A00); border-radius:99px; transition:width .3s; }
+    .budget-bar.over > div{ background:linear-gradient(90deg, var(--red), #C7431F); }
+    .list-meta{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--muted); font-weight:600; flex-wrap:wrap; gap:6px; }
+    .budget-line{ font-size:14px; font-weight:800; color:var(--ink); margin-top:8px; }
+    .budget-line.over{ color:var(--red); }
+    .link-btn{ background:none; border:0; color:var(--red); font-size:13px; font-weight:700; cursor:pointer; padding:6px; }
+    .link-btn.green{ color:var(--green-dark); }
+    .link-btn.orange{ color:#C77F1A; }
+    .seg{ display:inline-flex; border:1px solid var(--border); border-radius:999px; overflow:hidden; background:var(--bg-soft); }
+    .seg button{ background:transparent; border:0; color:var(--muted); font-size:13px; font-weight:700; padding:8px 14px; cursor:pointer; }
+    .seg button.on{ background:var(--green); color:#fff; }
+    .filter-chip{
+      border:1px solid var(--border); background:var(--card); color:var(--muted);
+      border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer;
+    }
+    .filter-chip.on{ background:var(--purple); border-color:var(--purple); color:#fff; }
+    /* ── Quick add + restock ── */
+    .quickadd{
+      display:flex; gap:8px; margin-bottom:6px;
+    }
+    .quickadd input{
+      flex:1; border:2px solid var(--green); border-radius:14px; padding:13px 14px;
+      font-size:16px; font-family:inherit; color:var(--ink); background:#fff;
+    }
+    .quickadd input:focus{ outline:none; border-color:var(--green-dark); }
+    .quickadd button{
+      flex:none; border:0; border-radius:14px; padding:0 20px;
+      background:var(--green); color:#fff; font-size:16px; font-weight:800; cursor:pointer;
+    }
+    .restock-row{ display:flex; gap:8px; overflow-x:auto; padding:8px 2px 4px; scrollbar-width:none; }
+    .restock-row::-webkit-scrollbar{ display:none; }
+    .restock-chip{
+      flex:none; border:1px dashed var(--orange); background:var(--orange-soft);
+      color:#8A5A00; border-radius:999px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer;
+    }
+    .section-label{ font-size:12px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin:12px 4px 2px; }
     /* ── Category groups ── */
     .cat-group{ margin-bottom:6px; }
     .cat-title{
-      font-size:12px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
-      color:var(--amber); margin:16px 4px 8px;
+      font-size:13px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+      margin:16px 4px 8px; display:flex; align-items:center; gap:8px;
     }
+    .cat-dot{ width:12px; height:12px; border-radius:50%; flex:none; }
     .item{
       display:flex; align-items:center; gap:12px;
-      background:var(--panel); border:1px solid var(--panel-border);
+      background:var(--card); border:1px solid var(--border);
       border-radius:16px; padding:12px 14px; margin-bottom:8px;
+      box-shadow:0 1px 5px rgba(28,43,33,.05);
     }
     .check{
-      width:32px; height:32px; flex:none; border-radius:50%;
-      border:2px solid var(--muted); background:transparent; cursor:pointer;
+      width:34px; height:34px; flex:none; border-radius:50%;
+      border:2px solid #C4D2C7; background:#fff; cursor:pointer;
       display:flex; align-items:center; justify-content:center;
-      font-size:18px; color:transparent;
+      font-size:19px; color:transparent;
     }
-    .item.done .check{ background:var(--green); border-color:var(--green); color:#06210f; }
+    .item.done .check{ background:var(--green); border-color:var(--green); color:#fff; }
+    .item-thumb{
+      width:46px; height:46px; flex:none; border-radius:12px; object-fit:cover;
+      border:1px solid var(--border); background:var(--bg-soft);
+    }
     .item-body{ flex:1; min-width:0; }
-    .item-name{ font-size:16px; font-weight:700; }
-    .item.done .item-name{ text-decoration:line-through; color:var(--muted); }
-    .item-sub{ font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+    .item-name{ font-size:17px; font-weight:700; }
+    .item.done .item-name{ text-decoration:line-through; color:var(--faint); }
+    .item-sub{ font-size:13px; color:var(--muted); font-weight:600; margin-top:2px; }
+    .badges{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .badge{
+      font-size:12px; font-weight:800; border-radius:999px; padding:4px 10px;
+      display:inline-flex; align-items:center; gap:4px;
+    }
+    .badge.price{ background:var(--green-soft); color:var(--green-dark); }
+    .badge.deal{ background:var(--orange-soft); color:#8A5A00; }
+    .badge.aisle{ background:var(--blue-soft); color:#1668A0; }
+    .badge.assign{ color:#fff; }
     .item-note{
-      font-size:13px; color:var(--ink); background:rgba(242,169,59,.12);
-      border-left:3px solid var(--amber); border-radius:0 8px 8px 0;
+      font-size:14px; color:var(--ink); background:var(--orange-soft);
+      border-left:3px solid var(--orange); border-radius:0 8px 8px 0;
       padding:6px 10px; margin-top:6px;
     }
     .item-edit{
-      flex:none; width:40px; height:40px; border-radius:12px;
-      border:1px solid var(--panel-border); background:transparent;
-      color:var(--muted); font-size:18px; cursor:pointer;
+      flex:none; width:42px; height:42px; border-radius:12px;
+      border:1px solid var(--border); background:var(--bg-soft);
+      color:var(--muted); font-size:19px; cursor:pointer;
     }
     .done-toggle{
-      width:100%; background:var(--panel); border:1px dashed var(--panel-border);
-      color:var(--muted); border-radius:16px; padding:12px;
-      font-size:14px; font-weight:700; cursor:pointer; margin-top:10px;
+      width:100%; background:var(--card); border:1px dashed var(--border);
+      color:var(--muted); border-radius:16px; padding:13px;
+      font-size:15px; font-weight:700; cursor:pointer; margin-top:10px;
     }
     .empty{
       text-align:center; color:var(--muted); padding:48px 20px;
-      font-size:15px; font-weight:600; line-height:1.6;
+      font-size:16px; font-weight:600; line-height:1.6;
     }
-    .empty .big{ font-size:44px; display:block; margin-bottom:10px; }
+    .empty .big{ font-size:48px; display:block; margin-bottom:10px; }
     /* ── FAB ── */
     .fab{
       position:fixed; left:16px; right:16px;
       bottom:calc(16px + env(safe-area-inset-bottom));
       z-index:200; max-width:688px; margin:0 auto;
-      background:linear-gradient(135deg, var(--amber), var(--amber-deep));
-      color:#1a1206; border:0; border-radius:20px;
-      font-size:18px; font-weight:800; padding:18px;
-      cursor:pointer; box-shadow:0 8px 28px rgba(242,169,59,.4);
+      background:linear-gradient(135deg, var(--green), var(--green-dark));
+      color:#fff; border:0; border-radius:20px;
+      font-size:19px; font-weight:800; padding:18px;
+      cursor:pointer; box-shadow:0 8px 28px rgba(47,168,79,.4);
     }
     .fab:active{ transform:scale(.98); }
     /* ── Bottom sheet ── */
     .sheet-overlay{
-      position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.55);
+      position:fixed; inset:0; z-index:300; background:rgba(28,43,33,.45);
       display:none; align-items:flex-end; justify-content:center;
     }
     .sheet-overlay.open{ display:flex; }
     .sheet{
       width:100%; max-width:720px; max-height:88vh; max-height:88dvh;
-      background:#0A2A3A; border-radius:24px 24px 0 0;
-      border-top:1px solid var(--panel-border);
+      background:#fff; border-radius:24px 24px 0 0;
       padding:12px 18px calc(20px + env(safe-area-inset-bottom));
       overflow-y:auto; animation:slideup .25s ease;
+      box-shadow:0 -8px 40px rgba(28,43,33,.15);
     }
     @keyframes slideup{ from{ transform:translateY(40px); opacity:.6; } }
-    .grabber{ width:44px; height:5px; border-radius:99px; background:rgba(255,255,255,.25); margin:4px auto 12px; }
-    .sheet h3{ margin:0 0 12px; font-size:19px; font-weight:800; }
+    .grabber{ width:44px; height:5px; border-radius:99px; background:#D8E2D6; margin:4px auto 12px; }
+    .sheet h3{ margin:0 0 12px; font-size:20px; font-weight:800; color:var(--ink); }
     .field{ margin-bottom:12px; }
     .field label{ display:block; font-size:12px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
     .field input, .field select, .field textarea{
-      width:100%; background:rgba(255,255,255,.07); border:1px solid var(--panel-border);
-      border-radius:12px; color:var(--ink); font-size:16px; padding:12px 14px; font-family:inherit;
+      width:100%; background:var(--bg-soft); border:1px solid var(--border);
+      border-radius:12px; color:var(--ink); font-size:17px; padding:12px 14px; font-family:inherit;
     }
     .field textarea{ min-height:64px; resize:vertical; }
-    .field input:focus, .field select:focus, .field textarea:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
-    .field select option{ background:#0A2A3A; }
+    .field input:focus, .field select:focus, .field textarea:focus{ outline:2px solid var(--green); border-color:var(--green); }
+    .field select option{ background:#fff; }
+    .price-wrap{ position:relative; }
+    .price-wrap::before{ content:"$"; position:absolute; left:14px; top:50%; transform:translateY(-50%); font-weight:800; color:var(--muted); }
+    .price-wrap input{ padding-left:30px; }
     .qty-row{ display:flex; gap:10px; align-items:stretch; }
     .qty-step{
-      width:52px; flex:none; border-radius:12px; border:1px solid var(--panel-border);
-      background:var(--panel); color:var(--ink); font-size:22px; font-weight:800; cursor:pointer;
+      width:52px; flex:none; border-radius:12px; border:1px solid var(--border);
+      background:var(--bg-soft); color:var(--ink); font-size:22px; font-weight:800; cursor:pointer;
     }
     .qty-row input{ text-align:center; font-size:18px; font-weight:800; }
     .btn{
       display:block; width:100%; border:0; border-radius:14px;
-      font-size:16px; font-weight:800; padding:15px; cursor:pointer; margin-top:6px;
+      font-size:17px; font-weight:800; padding:15px; cursor:pointer; margin-top:6px;
     }
-    .btn-primary{ background:linear-gradient(135deg, var(--amber), var(--amber-deep)); color:#1a1206; }
-    .btn-ghost{ background:transparent; border:1px solid var(--panel-border); color:var(--muted); }
-    .btn-danger{ background:rgba(255,107,107,.14); border:1px solid rgba(255,107,107,.4); color:var(--red); }
+    .btn-primary{ background:linear-gradient(135deg, var(--green), var(--green-dark)); color:#fff; }
+    .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--muted); }
+    .btn-danger{ background:var(--red-soft); border:1px solid #F2B8A6; color:var(--red); }
     .btn-row{ display:flex; gap:10px; }
     .btn-row .btn{ margin-top:10px; }
+    .assign-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .assign-chip{
+      border:1px solid var(--border); background:var(--bg-soft); color:var(--ink);
+      border-radius:999px; padding:9px 16px; font-size:15px; font-weight:700; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .assign-chip.on{ border-color:var(--ink); box-shadow:0 0 0 2px var(--ink) inset; }
+    .assign-dot{ width:22px; height:22px; border-radius:50%; color:#fff; font-size:12px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+    .photo-preview{ width:100%; max-height:200px; object-fit:cover; border-radius:14px; border:1px solid var(--border); margin-top:8px; display:block; }
     /* catalog browser */
+    .staples-row{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:none; }
+    .staples-row::-webkit-scrollbar{ display:none; }
+    .staple-chip{
+      flex:none; border:1px solid var(--orange); background:var(--orange-soft);
+      color:#8A5A00; border-radius:999px; padding:9px 15px;
+      font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap;
+    }
     .catchips{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:none; }
     .catchips::-webkit-scrollbar{ display:none; }
     .catchip{
-      flex:none; border:1px solid var(--panel-border); background:var(--panel);
-      color:var(--ink); border-radius:999px; padding:8px 14px;
-      font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+      flex:none; border:1px solid var(--border); background:#fff;
+      color:var(--ink); border-radius:999px; padding:9px 15px;
+      font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
+      display:inline-flex; align-items:center; gap:7px;
     }
-    .catchip.on{ background:var(--amber); border-color:var(--amber); color:#1a1206; }
-    .cat-result{ display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid rgba(255,255,255,.07); }
-    .cat-result .nm{ flex:1; font-size:15px; font-weight:600; }
-    .cat-result .ct{ font-size:11px; color:var(--muted); font-weight:700; }
+    .catchip .cdot{ width:10px; height:10px; border-radius:50%; }
+    .catchip.on{ background:var(--cc,#2FA84F); border-color:var(--cc,#2FA84F); color:#fff; }
+    .cat-result{ display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--border); }
+    .cat-result .nm{ flex:1; font-size:16px; font-weight:600; cursor:pointer; }
+    .cat-result .ct{ font-size:12px; color:var(--muted); font-weight:700; }
     .mini-add{
-      width:40px; height:40px; flex:none; border-radius:12px; border:0;
-      background:var(--amber); color:#1a1206; font-size:20px; font-weight:800; cursor:pointer;
+      width:42px; height:42px; flex:none; border-radius:12px; border:0;
+      background:var(--green); color:#fff; font-size:21px; font-weight:800; cursor:pointer;
     }
-    .cat-result .nm{ cursor:pointer; }
-    /* ── Overlays: splash / name picker ── */
+    /* ── Feed ── */
+    .feed-item{
+      display:flex; gap:12px; padding:12px 4px; border-bottom:1px solid var(--border);
+      font-size:15px; align-items:flex-start;
+    }
+    .feed-ico{
+      width:38px; height:38px; flex:none; border-radius:12px;
+      display:flex; align-items:center; justify-content:center; font-size:19px;
+    }
+    .feed-item .ft{ font-size:12px; color:var(--faint); font-weight:600; margin-top:2px; }
+    /* ── Overlays: name picker ── */
     .fullscreen{
       position:fixed; inset:0; z-index:500;
-      background:linear-gradient(170deg, var(--bg-top), var(--bg-mid) 55%, var(--bg-deep));
+      background:linear-gradient(160deg, #EAF7ED, #F6FAF3 60%, #FFFFFF);
       display:flex; align-items:center; justify-content:center; padding:24px;
     }
     .fullscreen.hidden{ display:none; }
     .card{
-      width:100%; max-width:420px; background:rgba(255,255,255,.06);
-      border:1px solid var(--panel-border); border-radius:24px; padding:28px 24px;
-      text-align:center;
+      width:100%; max-width:420px; background:#fff;
+      border:1px solid var(--border); border-radius:24px; padding:28px 24px;
+      text-align:center; box-shadow:0 8px 30px rgba(28,43,33,.1);
     }
-    .card .logo{ font-size:56px; }
-    .card h2{ margin:12px 0 6px; font-size:24px; }
-    .card p{ color:var(--muted); font-size:14px; line-height:1.6; margin:0 0 18px; }
+    .card .logo{ font-size:60px; }
+    .card h2{ margin:12px 0 6px; font-size:25px; color:var(--ink); }
+    .card p{ color:var(--muted); font-size:15px; line-height:1.6; margin:0 0 18px; }
     .card input{
-      width:100%; background:rgba(255,255,255,.08); border:1px solid var(--panel-border);
-      border-radius:14px; color:var(--ink); font-size:18px; padding:14px; text-align:center;
+      width:100%; background:var(--bg-soft); border:1px solid var(--border);
+      border-radius:14px; color:var(--ink); font-size:19px; padding:14px; text-align:center;
       font-family:inherit; margin-bottom:12px;
     }
-    .card input:focus{ outline:2px solid var(--amber); }
+    .card input:focus{ outline:2px solid var(--green); }
     .fam-code{
-      font-size:26px; font-weight:800; letter-spacing:3px; color:var(--amber);
-      background:rgba(242,169,59,.1); border:1px dashed var(--amber);
+      font-size:27px; font-weight:800; letter-spacing:3px; color:var(--green-dark);
+      background:var(--green-soft); border:1px dashed var(--green);
       border-radius:14px; padding:12px; margin:0 0 14px;
     }
     /* toast */
     #toast{
       position:fixed; left:50%; transform:translateX(-50%);
       bottom:calc(96px + env(safe-area-inset-bottom)); z-index:400;
-      background:#0F3A4D; color:#fff; border:2px solid var(--amber);
-      padding:12px 22px; border-radius:999px; font-size:14px; font-weight:800;
+      background:var(--ink); color:#fff;
+      padding:13px 24px; border-radius:999px; font-size:15px; font-weight:700;
       opacity:0; transition:opacity .3s; pointer-events:none; max-width:92vw; text-align:center;
-    }
-    .gear{
-      background:var(--panel); border:1px solid var(--panel-border); color:var(--ink);
-      width:44px; height:44px; border-radius:14px; font-size:20px; cursor:pointer; flex:none;
+      box-shadow:0 6px 20px rgba(0,0,0,.2);
     }
   </style>
 </head>
@@ -259,11 +347,12 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="icon-btn" onclick="openFeed()" aria-label="Activity">📜</button>
         <button class="who-chip" id="who-chip" onclick="openNamePicker(false)">
           <span class="sync-dot" id="sync-dot"></span>
           <span id="who-name">…</span>
         </button>
-        <button class="gear" onclick="openSettings()" aria-label="Settings">⚙️</button>
+        <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙️</button>
       </div>
     </div>
     <div class="listbar" id="listbar"></div>
@@ -284,6 +373,10 @@
         <div class="field">
           <input id="cat-search" type="search" placeholder="🔍 Search groceries…" oninput="renderCatalog()" />
         </div>
+        <div id="staples-wrap" style="display:none">
+          <div class="section-label" style="margin-top:0">⭐ Your staples — tap to re-add</div>
+          <div class="staples-row" id="staples-row"></div>
+        </div>
         <div class="catchips" id="cat-chips"></div>
         <div id="cat-results" style="max-height:30vh;overflow-y:auto;margin-bottom:6px"></div>
         <button class="btn btn-ghost" onclick="showCustomForm()">✏️ Add a custom item instead</button>
@@ -293,6 +386,15 @@
         <div class="field">
           <label>Item name</label>
           <input id="f-name" placeholder="e.g. Whole milk" />
+        </div>
+        <div class="field">
+          <label>Photo <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-ghost" style="margin-top:0" onclick="document.getElementById('f-photo').click()">📷 Take / choose photo</button>
+            <button class="btn btn-ghost" id="photo-remove-btn" style="margin-top:0;display:none" onclick="removePhoto()">Remove</button>
+          </div>
+          <input id="f-photo" type="file" accept="image/*" style="display:none" onchange="onPhotoSelect(this)" />
+          <img id="photo-preview" class="photo-preview" style="display:none" alt="Item photo" />
         </div>
         <div class="field">
           <label>Quantity</label>
@@ -309,6 +411,24 @@
               <option>g</option><option>lb</option><option>oz</option>
             </select>
           </div>
+        </div>
+        <div class="field">
+          <label>Est. price <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <div class="price-wrap">
+            <input id="f-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Assigned to</label>
+          <div class="assign-row" id="assignee-chips"></div>
+        </div>
+        <div class="field">
+          <label>Aisle <span style="text-transform:none;letter-spacing:0">(optional — for store-walk order)</span></label>
+          <input id="f-aisle" placeholder="e.g. A5, Dairy wall…" maxlength="24" />
+        </div>
+        <div class="field">
+          <label>Coupon / deal <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input id="f-deal" placeholder="e.g. BOGO at Metro" maxlength="60" />
         </div>
         <div class="field">
           <label>Special instructions</label>
@@ -343,10 +463,44 @@
         <label>Store (optional)</label>
         <input id="nl-store" placeholder="e.g. Costco" />
       </div>
+      <div class="field">
+        <label>Budget (optional)</label>
+        <div class="price-wrap">
+          <input id="nl-budget" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+      </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="createList()">Create list</button>
         <button class="btn btn-ghost" onclick="closeOverlays()">Cancel</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Budget sheet -->
+  <div class="sheet-overlay" id="budget-sheet">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <h3>List budget</h3>
+      <div class="field">
+        <label>Budget (leave empty for none)</label>
+        <div class="price-wrap">
+          <input id="b-budget" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveBudget()">Save budget</button>
+        <button class="btn btn-ghost" onclick="closeOverlays()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity feed sheet -->
+  <div class="sheet-overlay" id="feed-sheet">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <h3>📜 Family activity</h3>
+      <div id="feed-list"></div>
+      <button class="btn btn-ghost" onclick="closeOverlays()">Close</button>
     </div>
   </div>
 
@@ -362,7 +516,7 @@
       <div class="field">
         <label>Family code</label>
         <input id="s-code" placeholder="family" autocapitalize="none" spellcheck="false" />
-        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:8px 0 0">
+        <p style="font-size:14px;color:var(--muted);line-height:1.5;margin:8px 0 0">
           Everyone in the family must enter the <b>same code</b> on their phone to share lists.
           Pick something unique like your last name.
         </p>
@@ -388,6 +542,13 @@
   <script>
     /* ═══ Grocery catalog ═══ */
     const CATEGORIES = ["Produce","Dairy & Eggs","Meat & Seafood","Bakery","Pantry & Dry Goods","Frozen","Beverages","Snacks","Pharmacy & Health","Household","Baby","Pets"];
+    const CAT_COLORS = {
+      "Produce":"#2FA84F","Dairy & Eggs":"#2D9CDB","Meat & Seafood":"#E4572E","Bakery":"#F5A623",
+      "Pantry & Dry Goods":"#A9713B","Frozen":"#6BC5E8","Beverages":"#7B5EA7","Snacks":"#D6458B",
+      "Pharmacy & Health":"#3AAFA9","Household":"#8A8F98","Baby":"#F2A0C4","Pets":"#C77F1A",
+      "Other":"#9DB0A1"
+    };
+    const catColor = c => CAT_COLORS[c] || CAT_COLORS["Other"];
     const CATALOG = {
       "Produce": ["Apples","Bananas","Oranges","Strawberries","Blueberries","Grapes","Lemons","Limes","Avocados","Tomatoes","Lettuce","Spinach","Carrots","Celery","Onions","Potatoes","Garlic","Bell Peppers","Cucumbers","Broccoli"],
       "Dairy & Eggs": ["Milk","Eggs","Butter","Cheddar Cheese","Mozzarella","Yogurt","Greek Yogurt","Cream Cheese","Sour Cream","Whipping Cream","Cottage Cheese","Parmesan","Ice Cream","Chocolate Milk","Margarine"],
@@ -402,6 +563,7 @@
       "Baby": ["Diapers","Baby Wipes","Baby Formula","Baby Food","Diaper Cream","Baby Shampoo","Baby Lotion","Bottles","Pacifiers","Baby Cereal","Sippy Cups","Baby Laundry Detergent"],
       "Pets": ["Dog Food","Cat Food","Cat Litter","Dog Treats","Cat Treats","Pet Shampoo","Poop Bags","Bird Seed","Fish Food","Flea Treatment","Pet Toys","Litter Liners"]
     };
+    const ASSIGN_COLORS = ["#2FA84F","#F5A623","#7B5EA7","#E4572E","#2D9CDB","#D6458B","#3AAFA9"];
 
     /* ═══ Firebase ═══ */
     const firebaseConfig = {
@@ -414,6 +576,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const storage = firebase.storage();
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
     /* ═══ State ═══ */
@@ -421,13 +584,32 @@
     let familyCode = localStorage.getItem('fl_familyCode') || 'family';
     let lists = [];
     let activeListId = localStorage.getItem('fl_activeList') || null;
-    let unsubscribe = null;
-    let editingItemId = null;
+    let staples = {};          // nameKey -> {name, count, category}
+    let activity = [];
+    let unsubscribe = null, unsubStaples = null, unsubActivity = null;
+    let editingItemId = null, editingPhotoURL = '', editingAssignee = '';
     let catalogCat = 'All';
+    let myFilter = false;
 
     const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+    const safeCode = () => familyCode.replace(/[\/#?\[\]]/g, '_');
     const esc = s => (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const fmtTime = ts => { try{ return new Date(ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } };
+    const fmtMoney = n => '$' + (parseFloat(n) || 0).toFixed(2);
+    const fmtAgo = ts => {
+      const m = Math.floor((Date.now() - ts) / 60000);
+      if(m < 1) return 'just now';
+      if(m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if(h < 24) return h + 'h ago';
+      const d = Math.floor(h / 24);
+      return d === 1 ? 'yesterday' : d + 'd ago';
+    };
+    const assigneeColor = name => {
+      let h = 0;
+      for(const ch of (name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return ASSIGN_COLORS[h % ASSIGN_COLORS.length];
+    };
+    const initialOf = name => (name || '?').trim().charAt(0).toUpperCase();
 
     function setSync(state){
       const d = document.getElementById('sync-dot');
@@ -445,6 +627,8 @@
     /* ═══ Firestore sync ═══ */
     function subscribe(){
       if(unsubscribe) unsubscribe();
+      if(unsubStaples) unsubStaples();
+      if(unsubActivity) unsubActivity();
       setSync('syncing');
       unsubscribe = db.collection('familylists')
         .where('familyCode', '==', familyCode)
@@ -462,6 +646,28 @@
           setSync('offline');
           toast('Offline — changes will sync when reconnected');
         });
+      // staples: one doc per family code
+      unsubStaples = db.collection('familystaples').doc(safeCode())
+        .onSnapshot(doc => {
+          staples = (doc.exists && doc.data().counts) || {};
+          if(document.getElementById('item-sheet').classList.contains('open')) renderStaplesRow();
+          if(activeList()) render();
+        }, () => {});
+      // activity feed (client-side sort + limit to avoid composite index)
+      unsubActivity = db.collection('familylist_activity')
+        .where('familyCode', '==', familyCode)
+        .onSnapshot(snap => {
+          activity = snap.docs.map(d => d.data()).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 60);
+          if(document.getElementById('feed-sheet').classList.contains('open')) renderFeed();
+          // trim: keep the newest 200 server-side, best effort
+          if(snap.docs.length > 200){
+            const sorted = snap.docs.map(d => ({ id: d.id, ts: d.data().ts || 0 }))
+              .sort((a, b) => a.ts - b.ts).slice(0, snap.docs.length - 200);
+            const batch = db.batch();
+            sorted.forEach(x => batch.delete(db.collection('familylist_activity').doc(x.id)));
+            batch.commit().catch(() => {});
+          }
+        }, () => {});
     }
 
     function activeList(){
@@ -475,6 +681,8 @@
         familyCode: list.familyCode,
         name: list.name,
         store: list.store || '',
+        budget: parseFloat(list.budget) || 0,
+        sortMode: list.sortMode || 'category',
         items: list.items || [],
         createdAt: list.createdAt || Date.now(),
         updatedAt: list.updatedAt
@@ -483,6 +691,45 @@
         setSync('offline');
         toast('Couldn’t save — check your connection');
       });
+    }
+
+    function logActivity(action, item, list){
+      db.collection('familylist_activity').add({
+        familyCode, ts: Date.now(), actor: myName || 'Someone',
+        action, itemName: item ? (item.name || '') : '',
+        listName: list ? (list.name || '') : '', listId: list ? list.id : ''
+      }).catch(() => {});
+    }
+
+    function bumpStaple(item){
+      if(!item || !item.name) return;
+      const key = item.name.trim().toLowerCase().replace(/[\/#?\[\].]/g, '_').slice(0, 120);
+      if(!key) return;
+      db.collection('familystaples').doc(safeCode()).set({
+        familyCode,
+        counts: {
+          [key]: {
+            name: item.name.trim(),
+            category: item.category || 'Other',
+            count: firebase.firestore.FieldValue.increment(1)
+          }
+        }
+      }, { merge: true }).catch(() => {});
+    }
+
+    function peopleList(){
+      const names = new Set();
+      if(myName) names.add(myName);
+      lists.forEach(l => (l.items || []).forEach(i => {
+        if(i.addedBy) names.add(i.addedBy);
+        if(i.assignee) names.add(i.assignee);
+        if(i.checkedBy) names.add(i.checkedBy);
+      }));
+      return [...names].sort();
+    }
+
+    function topStaples(n){
+      return Object.values(staples).sort((a, b) => (b.count || 0) - (a.count || 0)).slice(0, n);
     }
 
     /* ═══ Rendering ═══ */
@@ -498,7 +745,7 @@
       let html = lists.map(l => {
         const n = (l.items || []).length;
         const done = (l.items || []).filter(i => i.checked).length;
-        return `<button class="list-chip${l.id === activeListId ? ' on' : ''}" onclick="switchList('${l.id}')">${esc(l.name)} · ${done}/${n}</button>`;
+        return `<button class="list-chip${l.id === activeListId ? ' on' : ''}" onclick="switchList('${l.id}')">🧺 ${esc(l.name)} · ${done}/${n}</button>`;
       }).join('');
       html += `<button class="list-chip new" onclick="openListSheet()">＋ New list</button>`;
       bar.innerHTML = html;
@@ -513,8 +760,15 @@
         return;
       }
       const items = list.items || [];
-      const open = items.filter(i => !i.checked);
+      let open = items.filter(i => !i.checked);
       const done = items.filter(i => i.checked);
+      if(myFilter && myName) open = open.filter(i => (i.assignee || '') === myName);
+
+      // running total of unchecked items
+      const total = items.filter(i => !i.checked)
+        .reduce((s, i) => s + (parseFloat(i.price) || 0) * (parseInt(i.qty, 10) || 1), 0);
+      const budget = parseFloat(list.budget) || 0;
+      const over = budget > 0 && total > budget;
 
       let html = `<div class="list-head">
         <h2>${esc(list.name)}</h2>
@@ -523,22 +777,57 @@
         <div class="list-meta">
           <span>${done.length} of ${items.length} done</span>
           <span>
-            ${done.length ? `<button class="link-btn amber" onclick="clearDone()">Clear done</button>` : ''}
+            ${done.length ? `<button class="link-btn green" onclick="clearDone()">Clear done</button>` : ''}
             <button class="link-btn" onclick="deleteList()">Delete list</button>
           </span>
         </div>
+        <div class="budget-line${over ? ' over' : ''}">
+          💰 Est. ${fmtMoney(total)}${budget > 0 ? ` of ${fmtMoney(budget)} budget` : ' <button class="link-btn orange" onclick="openBudgetSheet()">+ set budget</button>'}
+        </div>
+        ${budget > 0 ? `<div class="budget-bar${over ? ' over' : ''}"><div style="width:${Math.min(100, Math.round(total / budget * 100))}%"></div></div>
+        <div class="list-meta"><span>${over ? '⚠️ Over budget!' : 'On track 👍'}</span><button class="link-btn orange" onclick="openBudgetSheet()">Edit budget</button></div>` : ''}
+        <div class="list-meta" style="margin-top:10px">
+          <span class="seg">
+            <button class="${(list.sortMode || 'category') === 'category' ? 'on' : ''}" onclick="setSortMode('category')">🗂️ Category</button>
+            <button class="${list.sortMode === 'store' ? 'on' : ''}" onclick="setSortMode('store')">🚶 Store walk</button>
+          </span>
+          <button class="filter-chip${myFilter ? ' on' : ''}" onclick="toggleMyFilter()">${myFilter ? '✓ ' : ''}🙋 My items</button>
+        </div>
       </div>`;
+
+      // quick-add bar
+      html += `<div class="section-label">🏃 We're out of…</div>
+        <div class="quickadd">
+          <input id="qa-input" placeholder="Type it and tap Add…" onkeydown="if(event.key==='Enter')quickAddBar()" />
+          <button onclick="quickAddBar()">Add</button>
+        </div>
+        <div id="restock-wrap"></div>`;
 
       if(!items.length){
         html += `<div class="empty"><span class="big">🛒</span>This list is empty.<br/>Tap <b>＋ Add item</b> to start adding groceries.</div>`;
       } else {
-        // group open items by category, in catalog order
+        const storeMode = list.sortMode === 'store';
         const groups = {};
-        open.forEach(i => { const c = i.category || 'Other'; (groups[c] = groups[c] || []).push(i); });
-        const order = c => { const ix = CATEGORIES.indexOf(c); return ix === -1 ? 999 : ix; };
-        Object.keys(groups).sort((a, b) => order(a) - order(b)).forEach(cat => {
-          html += `<div class="cat-group"><div class="cat-title">${esc(cat)}</div>`;
-          groups[cat].forEach(i => { html += itemRow(i, false); });
+        open.forEach(i => {
+          const key = storeMode ? (i.aisle || i.category || 'Other') : (i.category || 'Other');
+          (groups[key] = groups[key] || []).push(i);
+        });
+        const catIx = c => { const ix = CATEGORIES.indexOf(c); return ix === -1 ? 999 : ix; };
+        const groupOrder = keys => keys.sort((a, b) => {
+          if(!storeMode) return catIx(a) - catIx(b);
+          // store walk: explicit aisle labels first (alphabetical), then categories in walk order
+          const aAisle = open.some(i => (i.aisle || '') === a && i.aisle);
+          const bAisle = open.some(i => (i.aisle || '') === b && i.aisle);
+          if(aAisle && !bAisle) return -1;
+          if(!aAisle && bAisle) return 1;
+          if(aAisle && bAisle) return a.localeCompare(b);
+          return catIx(a) - catIx(b);
+        });
+        groupOrder(Object.keys(groups)).forEach(g => {
+          const color = catColor(groups[g][0].category || 'Other');
+          const isAisle = storeMode && groups[g][0].aisle === g;
+          html += `<div class="cat-group"><div class="cat-title" style="color:${color}"><span class="cat-dot" style="background:${color}"></span>${isAisle ? '🛒 Aisle: ' : ''}${esc(g)}</div>`;
+          groups[g].forEach(i => { html += itemRow(i, false); });
           html += `</div>`;
         });
         if(done.length){
@@ -550,15 +839,37 @@
         }
       }
       main.innerHTML = html;
+      renderRestock();
+    }
+
+    function renderRestock(){
+      const wrap = document.getElementById('restock-wrap');
+      if(!wrap) return;
+      const list = activeList();
+      if(!list){ wrap.innerHTML = ''; return; }
+      const onList = new Set((list.items || []).map(i => (i.name || '').trim().toLowerCase()));
+      const sug = topStaples(30).filter(s => !onList.has((s.name || '').trim().toLowerCase())).slice(0, 8);
+      wrap.innerHTML = sug.length
+        ? `<div class="section-label">🔁 Restock suggestions</div><div class="restock-row">` +
+          sug.map(s => `<button class="restock-chip" onclick="quickAddStaple('${esc(s.name).replace(/'/g, "\\'")}','${esc(s.category || 'Other').replace(/'/g, "\\'")}')">＋ ${esc(s.name)}</button>`).join('') +
+          `</div>`
+        : '';
     }
 
     function itemRow(i, isDone){
       const qty = [i.qty > 1 ? i.qty : '', i.unit || ''].filter(Boolean).join(' ');
+      const badges = [];
+      if(parseFloat(i.price) > 0) badges.push(`<span class="badge price">${fmtMoney(parseFloat(i.price) * (parseInt(i.qty, 10) || 1))}</span>`);
+      if(i.assignee) badges.push(`<span class="badge assign" style="background:${assigneeColor(i.assignee)}">${initialOf(i.assignee)} ${esc(i.assignee)}</span>`);
+      if(i.deal) badges.push(`<span class="badge deal">🏷️ ${esc(i.deal)}</span>`);
+      if(i.aisle) badges.push(`<span class="badge aisle">🛒 ${esc(i.aisle)}</span>`);
       return `<div class="item${isDone ? ' done' : ''}">
         <button class="check" onclick="toggleCheck('${i.id}')">✓</button>
+        ${i.photoURL ? `<img class="item-thumb" src="${esc(i.photoURL)}" alt="" loading="lazy" />` : ''}
         <div class="item-body" onclick="openEditSheet('${i.id}')">
-          <div class="item-name">${esc(i.name)}${qty ? ` <span style="color:var(--amber);font-weight:800">× ${esc(qty)}</span>` : ''}</div>
-          <div class="item-sub">${isDone && i.checkedBy ? `✓ ${esc(i.checkedBy)}${i.checkedAt ? ' · ' + fmtTime(i.checkedAt) : ''}` : `added by ${esc(i.addedBy || 'someone')}`}</div>
+          <div class="item-name">${esc(i.name)}${qty ? ` <span style="color:var(--green-dark);font-weight:800">× ${esc(qty)}</span>` : ''}</div>
+          <div class="item-sub">${isDone && i.checkedBy ? `✓ ${esc(i.checkedBy)} · ${fmtAgo(i.checkedAt || Date.now())}` : `added by ${esc(i.addedBy || 'someone')}`}</div>
+          ${badges.length ? `<div class="badges">${badges.join('')}</div>` : ''}
           ${i.note ? `<div class="item-note">📝 ${esc(i.note)}</div>` : ''}
         </div>
         <button class="item-edit" onclick="openEditSheet('${i.id}')" aria-label="Edit">✏️</button>
@@ -568,6 +879,7 @@
     /* ═══ Lists ═══ */
     function switchList(id){
       activeListId = id;
+      myFilter = false;
       try{ localStorage.setItem('fl_activeList', id); }catch(e){}
       render();
     }
@@ -575,6 +887,7 @@
     function openListSheet(){
       document.getElementById('nl-name').value = '';
       document.getElementById('nl-store').value = '';
+      document.getElementById('nl-budget').value = '';
       document.getElementById('list-sheet').classList.add('open');
       setTimeout(() => document.getElementById('nl-name').focus(), 100);
     }
@@ -583,11 +896,13 @@
       const name = document.getElementById('nl-name').value.trim();
       if(!name){ toast('Give the list a name'); return; }
       const store = document.getElementById('nl-store').value.trim();
+      const budget = parseFloat(document.getElementById('nl-budget').value) || 0;
       const list = {
-        id: uid(), familyCode, name, store,
+        id: uid(), familyCode, name, store, budget, sortMode: 'category',
         items: [], createdAt: Date.now(), updatedAt: Date.now()
       };
       closeOverlays();
+      logActivity('created', null, list);
       saveList(list).then(() => {
         activeListId = list.id;
         try{ localStorage.setItem('fl_activeList', list.id); }catch(e){}
@@ -599,6 +914,7 @@
       const list = activeList();
       if(!list) return;
       if(!confirm(`Delete "${list.name}" and all its items?`)) return;
+      logActivity('deleted_list', null, list);
       setSync('syncing');
       db.collection('familylists').doc(list.id).delete()
         .catch(err => { console.error(err); toast('Couldn’t delete'); });
@@ -608,8 +924,37 @@
       const list = activeList();
       if(!list) return;
       list.items = (list.items || []).filter(i => !i.checked);
+      logActivity('cleared', null, list);
       saveList(list);
       toast('Cleared done items');
+    }
+
+    function setSortMode(mode){
+      const list = activeList();
+      if(!list) return;
+      list.sortMode = mode;
+      saveList(list);
+    }
+
+    function toggleMyFilter(){
+      myFilter = !myFilter;
+      render();
+    }
+
+    function openBudgetSheet(){
+      const list = activeList();
+      if(!list) return;
+      document.getElementById('b-budget').value = parseFloat(list.budget) > 0 ? list.budget : '';
+      document.getElementById('budget-sheet').classList.add('open');
+    }
+
+    function saveBudget(){
+      const list = activeList();
+      if(!list) return;
+      list.budget = parseFloat(document.getElementById('b-budget').value) || 0;
+      closeOverlays();
+      saveList(list);
+      toast(list.budget > 0 ? 'Budget set to ' + fmtMoney(list.budget) : 'Budget removed');
     }
 
     /* ═══ Items ═══ */
@@ -619,23 +964,45 @@
       const item = (list.items || []).find(i => i.id === id);
       if(!item) return;
       item.checked = !item.checked;
-      if(item.checked){ item.checkedBy = myName; item.checkedAt = Date.now(); }
-      else { item.checkedBy = null; item.checkedAt = null; }
+      if(item.checked){
+        item.checkedBy = myName; item.checkedAt = Date.now();
+        bumpStaple(item);
+        logActivity('checked', item, list);
+      } else {
+        item.checkedBy = null; item.checkedAt = null;
+        logActivity('unchecked', item, list);
+      }
       saveList(list);
     }
 
     function quickAdd(name, category){
       const list = activeList();
       if(!list){ toast('Create a list first'); return; }
-      list.items = list.items || [];
-      list.items.push({
-        id: uid(), name, qty: 1, unit: '', note: '',
+      const item = {
+        id: uid(), name, qty: 1, unit: '', note: '', price: 0,
+        assignee: '', aisle: '', deal: '', photoURL: '',
         category: category || 'Other',
         addedBy: myName, addedAt: Date.now(),
         checked: false, checkedBy: null, checkedAt: null
-      });
+      };
+      list.items = list.items || [];
+      list.items.push(item);
+      logActivity('added', item, list);
       saveList(list);
       toast('Added ' + name);
+    }
+
+    function quickAddStaple(name, category){
+      quickAdd(name, category);
+      closeOverlays();
+    }
+
+    function quickAddBar(){
+      const el = document.getElementById('qa-input');
+      const name = (el.value || '').trim();
+      if(!name){ toast('Type an item first'); return; }
+      quickAdd(name, 'Pantry & Dry Goods');
+      el.value = '';
     }
 
     function stepQty(d){
@@ -646,6 +1013,8 @@
     function openAddSheet(){
       if(!activeList()){ toast('Create a list first'); return; }
       editingItemId = null;
+      editingPhotoURL = '';
+      editingAssignee = '';
       document.getElementById('sheet-title').textContent = 'Add item';
       document.getElementById('save-item-btn').textContent = 'Add item';
       document.getElementById('edit-extra').style.display = 'none';
@@ -653,8 +1022,21 @@
       document.getElementById('custom-form').style.display = 'none';
       document.getElementById('cat-search').value = '';
       catalogCat = 'All';
+      renderStaplesRow();
       renderCatalog();
       document.getElementById('item-sheet').classList.add('open');
+    }
+
+    function renderStaplesRow(){
+      const wrap = document.getElementById('staples-wrap');
+      const row = document.getElementById('staples-row');
+      if(!wrap || !row) return;
+      const top = topStaples(12);
+      if(!top.length){ wrap.style.display = 'none'; return; }
+      wrap.style.display = '';
+      row.innerHTML = top.map(s =>
+        `<button class="staple-chip" onclick="quickAddStaple('${esc(s.name).replace(/'/g, "\\'")}','${esc(s.category || 'Other').replace(/'/g, "\\'")}')">＋ ${esc(s.name)}</button>`
+      ).join('');
     }
 
     function showCustomForm(name, category){
@@ -663,8 +1045,14 @@
       document.getElementById('f-name').value = name || '';
       document.getElementById('f-qty').value = '1';
       document.getElementById('f-unit').value = '';
+      document.getElementById('f-price').value = '';
+      document.getElementById('f-aisle').value = '';
+      document.getElementById('f-deal').value = '';
       document.getElementById('f-note').value = '';
+      document.getElementById('f-photo').value = '';
+      updatePhotoPreview();
       fillCatSelect(category || 'Produce');
+      renderAssigneeChips();
       setTimeout(() => document.getElementById('f-name').focus(), 100);
     }
 
@@ -674,12 +1062,30 @@
         `<option${sel === 'Other' ? ' selected' : ''}>Other</option>`;
     }
 
+    function renderAssigneeChips(){
+      const wrap = document.getElementById('assignee-chips');
+      const people = peopleList();
+      let html = `<button class="assign-chip${!editingAssignee ? ' on' : ''}" onclick="setAssignee('')">Anyone</button>`;
+      html += people.map(p =>
+        `<button class="assign-chip${editingAssignee === p ? ' on' : ''}" onclick="setAssignee('${esc(p).replace(/'/g, "\\'")}')">
+          <span class="assign-dot" style="background:${assigneeColor(p)}">${initialOf(p)}</span>${esc(p)}</button>`
+      ).join('');
+      wrap.innerHTML = html;
+    }
+
+    function setAssignee(name){
+      editingAssignee = name;
+      renderAssigneeChips();
+    }
+
     function openEditSheet(id){
       const list = activeList();
       if(!list) return;
       const item = (list.items || []).find(i => i.id === id);
       if(!item) return;
       editingItemId = id;
+      editingPhotoURL = item.photoURL || '';
+      editingAssignee = item.assignee || '';
       document.getElementById('sheet-title').textContent = 'Edit item';
       document.getElementById('save-item-btn').textContent = 'Save changes';
       document.getElementById('edit-extra').style.display = '';
@@ -688,8 +1094,14 @@
       document.getElementById('f-name').value = item.name || '';
       document.getElementById('f-qty').value = item.qty || 1;
       document.getElementById('f-unit').value = item.unit || '';
+      document.getElementById('f-price').value = parseFloat(item.price) > 0 ? item.price : '';
+      document.getElementById('f-aisle').value = item.aisle || '';
+      document.getElementById('f-deal').value = item.deal || '';
       document.getElementById('f-note').value = item.note || '';
+      document.getElementById('f-photo').value = '';
+      updatePhotoPreview();
       fillCatSelect(item.category || 'Produce');
+      renderAssigneeChips();
       document.getElementById('item-sheet').classList.add('open');
     }
 
@@ -702,19 +1114,27 @@
         name,
         qty: Math.max(1, parseInt(document.getElementById('f-qty').value, 10) || 1),
         unit: document.getElementById('f-unit').value,
+        price: parseFloat(document.getElementById('f-price').value) || 0,
+        assignee: editingAssignee,
+        aisle: document.getElementById('f-aisle').value.trim(),
+        deal: document.getElementById('f-deal').value.trim(),
         note: document.getElementById('f-note').value.trim(),
+        photoURL: editingPhotoURL,
         category: document.getElementById('f-cat').value
       };
       list.items = list.items || [];
       if(editingItemId){
         const item = list.items.find(i => i.id === editingItemId);
         if(item) Object.assign(item, data);
+        logActivity('edited', data, list);
         toast('Saved');
       } else {
-        list.items.push(Object.assign({
+        const item = Object.assign({
           id: uid(), addedBy: myName, addedAt: Date.now(),
           checked: false, checkedBy: null, checkedAt: null
-        }, data));
+        }, data);
+        list.items.push(item);
+        logActivity('added', item, list);
         toast('Added ' + name);
       }
       closeSheet();
@@ -725,7 +1145,12 @@
       const list = activeList();
       if(!list || !editingItemId) return;
       if(!confirm('Delete this item?')) return;
+      const item = list.items.find(i => i.id === editingItemId);
       list.items = (list.items || []).filter(i => i.id !== editingItemId);
+      if(item && item.photoURL){
+        storage.refFromURL(item.photoURL).delete().catch(() => {});
+      }
+      logActivity('deleted', item || { name: '' }, list);
       closeSheet();
       saveList(list);
       toast('Item deleted');
@@ -734,14 +1159,87 @@
     function closeSheet(){
       document.getElementById('item-sheet').classList.remove('open');
       editingItemId = null;
+      editingPhotoURL = '';
+      editingAssignee = '';
     }
 
+    /* ── Photos ── */
+    function compressImage(file, maxDimension){
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          if(width > maxDimension || height > maxDimension){
+            if(width > height){
+              height = Math.round(height * (maxDimension / width));
+              width = maxDimension;
+            } else {
+              width = Math.round(width * (maxDimension / height));
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.82);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not load image')); };
+        img.src = url;
+      });
+    }
+
+    function onPhotoSelect(input){
+      const file = input.files && input.files[0];
+      if(!file) return;
+      toast('Uploading photo…');
+      compressImage(file, 800).then(blob => {
+        const itemId = editingItemId || uid();
+        const path = `familylist/${safeCode()}/${itemId}.jpg`;
+        const ref = storage.ref(path);
+        return ref.put(blob).then(() => ref.getDownloadURL());
+      }).then(url => {
+        editingPhotoURL = url;
+        updatePhotoPreview();
+        toast('Photo added');
+      }).catch(err => {
+        console.error('Photo upload failed:', err);
+        toast('Photo upload failed — try again');
+      });
+    }
+
+    function updatePhotoPreview(){
+      const img = document.getElementById('photo-preview');
+      const rm = document.getElementById('photo-remove-btn');
+      if(editingPhotoURL){
+        img.src = editingPhotoURL;
+        img.style.display = 'block';
+        rm.style.display = '';
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+        rm.style.display = 'none';
+      }
+    }
+
+    function removePhoto(){
+      if(editingPhotoURL){
+        storage.refFromURL(editingPhotoURL).delete().catch(() => {});
+      }
+      editingPhotoURL = '';
+      document.getElementById('f-photo').value = '';
+      updatePhotoPreview();
+    }
+
+    /* ── Catalog ── */
     function renderCatalog(){
       const q = document.getElementById('cat-search').value.trim().toLowerCase();
       const chips = document.getElementById('cat-chips');
-      chips.innerHTML = ['All', ...CATEGORIES].map(c =>
-        `<button class="catchip${c === catalogCat ? ' on' : ''}" onclick="setCatalogCat('${c.replace(/'/g, "\\'")}')">${c}</button>`
-      ).join('');
+      chips.innerHTML = ['All', ...CATEGORIES].map(c => {
+        const col = c === 'All' ? '#2FA84F' : catColor(c);
+        return `<button class="catchip${c === catalogCat ? ' on' : ''}" style="--cc:${col}" onclick="setCatalogCat('${c.replace(/'/g, "\\'")}')"><span class="cdot" style="background:${col}"></span>${c}</button>`;
+      }).join('');
       let results = [];
       Object.keys(CATALOG).forEach(cat => {
         if(catalogCat !== 'All' && cat !== catalogCat) return;
@@ -763,6 +1261,46 @@
     function setCatalogCat(c){
       catalogCat = c;
       renderCatalog();
+    }
+
+    /* ── Activity feed ── */
+    const FEED_TEXT = {
+      added: i => `added <b>${esc(i.itemName)}</b>`,
+      checked: i => `checked off <b>${esc(i.itemName)}</b> ✓`,
+      unchecked: i => `put back <b>${esc(i.itemName)}</b>`,
+      deleted: i => `deleted <b>${esc(i.itemName)}</b>`,
+      edited: i => `edited <b>${esc(i.itemName)}</b>`,
+      cleared: i => `cleared done items`,
+      created: i => `created the list <b>${esc(i.listName)}</b>`,
+      deleted_list: i => `deleted the list <b>${esc(i.listName)}</b>`
+    };
+    const FEED_ICON = {
+      added: ['🛒', 'var(--green-soft)'], checked: ['✓', 'var(--green-soft)'],
+      unchecked: ['↩️', 'var(--blue-soft)'], deleted: ['🗑️', 'var(--red-soft)'],
+      edited: ['✏️', 'var(--orange-soft)'], cleared: ['🧹', 'var(--purple-soft)'],
+      created: ['📝', 'var(--blue-soft)'], deleted_list: ['🗑️', 'var(--red-soft)']
+    };
+
+    function openFeed(){
+      renderFeed();
+      document.getElementById('feed-sheet').classList.add('open');
+    }
+
+    function renderFeed(){
+      const el = document.getElementById('feed-list');
+      if(!activity.length){
+        el.innerHTML = `<div class="empty" style="padding:24px"><span class="big">📜</span>Nothing yet — activity from the whole family shows up here.</div>`;
+        return;
+      }
+      el.innerHTML = activity.map(a => {
+        const [ico, bg] = FEED_ICON[a.action] || ['•', 'var(--bg-soft)'];
+        const txt = (FEED_TEXT[a.action] || (x => esc(x.action)))(a);
+        return `<div class="feed-item">
+          <div class="feed-ico" style="background:${bg}">${ico}</div>
+          <div><div><b>${esc(a.actor)}</b> ${txt}${a.listName ? ` <span style="color:var(--faint)">· ${esc(a.listName)}</span>` : ''}</div>
+          <div class="ft">${fmtAgo(a.ts || Date.now())}</div></div>
+        </div>`;
+      }).join('');
     }
 
     /* ═══ Name picker & settings ═══ */
@@ -810,6 +1348,8 @@
     function closeOverlays(){
       document.querySelectorAll('.sheet-overlay').forEach(o => o.classList.remove('open'));
       editingItemId = null;
+      editingPhotoURL = '';
+      editingAssignee = '';
     }
 
     // tap outside a sheet to close it
