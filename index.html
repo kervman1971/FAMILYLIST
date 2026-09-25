@@ -374,15 +374,15 @@
 
       <div id="catalog-browser">
         <div class="field">
-          <input id="cat-search" type="search" placeholder="🔍 Search groceries…" oninput="renderCatalog()" />
+          <input id="cat-search" type="search" placeholder="What do you need? 🔍" oninput="renderCatalog()" />
         </div>
+        <div class="mode-hint" style="margin-top:-2px">Tap <b>＋</b> to add instantly · tap a name for quantity, notes & more</div>
         <div id="staples-wrap" style="display:none">
           <div class="section-label" style="margin-top:0">⭐ Your staples — tap to re-add</div>
           <div class="staples-row" id="staples-row"></div>
         </div>
         <div class="catchips" id="cat-chips"></div>
         <div id="cat-results" style="max-height:30vh;overflow-y:auto;margin-bottom:6px"></div>
-        <button class="btn btn-ghost" onclick="showCustomForm()">✏️ Add a custom item instead</button>
       </div>
 
       <div id="custom-form" style="display:none">
@@ -1011,6 +1011,39 @@
       el.value = '';
     }
 
+    /* Guess a category for a typed custom item from keywords */
+    const CAT_GUESS = [
+      ['Produce', ['apple','banana','orange','lettuce','tomato','potato','onion','carrot','pepper','cucumber','salad','spinach','broccoli','grape','berry','berries','lemon','lime','avocado','mushroom','celery','kale','fruit','veg','produce']],
+      ['Dairy & Eggs', ['milk','cheese','yogurt','yoghurt','egg','butter','cream','margarine']],
+      ['Meat & Seafood', ['chicken','beef','pork','fish','salmon','tuna','shrimp','turkey','bacon','sausage','steak','meat','seafood']],
+      ['Bakery', ['bread','bagel','croissant','muffin','donut','doughnut','bun','roll','bagette','baguette','tortilla','pita']],
+      ['Frozen', ['frozen','ice cream','pizza']],
+      ['Beverages', ['juice','soda','pop','water','coffee','tea','beer','wine','milkshake']],
+      ['Snacks', ['chip','cookie','cracker','popcorn','granola','candy','chocolate','nut']],
+      ['Pharmacy & Health', ['vitamin','tylenol','advil','bandage','shampoo','soap','toothpaste','medicine','pill','sunscreen','lotion']],
+      ['Household', ['paper towel','toilet paper','detergent','soap','cleaner','bleach','napkin','foil','wrap','bag','battery','batteries','light bulb']],
+      ['Baby', ['diaper','wipes','formula','baby']],
+      ['Pets', ['dog','cat','pet','kibble','litter','treat']],
+    ];
+    function guessCategory(name){
+      const n = ' ' + name.toLowerCase() + ' ';
+      for(const [cat, words] of CAT_GUESS){
+        if(words.some(w => n.includes(w))) return cat;
+      }
+      return 'Other';
+    }
+
+    function quickAddCustom(){
+      const el = document.getElementById('cat-search');
+      const name = (el.value || '').trim();
+      if(!name){ toast('Type an item first'); return; }
+      quickAdd(name, guessCategory(name));
+      el.value = '';
+      catalogCat = 'All';
+      renderCatalog();
+      el.focus();
+    }
+
     function stepQty(d){
       const el = document.getElementById('f-qty');
       el.value = Math.max(1, (parseInt(el.value, 10) || 1) + d);
@@ -1031,6 +1064,7 @@
       renderStaplesRow();
       renderCatalog();
       document.getElementById('item-sheet').classList.add('open');
+      document.getElementById('cat-search').focus();
     }
 
     function renderStaplesRow(){
@@ -1240,7 +1274,8 @@
 
     /* ── Catalog ── */
     function renderCatalog(){
-      const q = document.getElementById('cat-search').value.trim().toLowerCase();
+      const qRaw = document.getElementById('cat-search').value.trim();
+      const q = qRaw.toLowerCase();
       const chips = document.getElementById('cat-chips');
       chips.innerHTML = ['All', ...CATEGORIES].map(c => {
         const col = c === 'All' ? '#2FA84F' : catColor(c);
@@ -1255,13 +1290,20 @@
         });
       });
       results = results.slice(0, 60);
-      document.getElementById('cat-results').innerHTML = results.length
+      const exact = qRaw && results.some(r => r.name.toLowerCase() === q);
+      const customRow = (qRaw && !exact)
+        ? `<div class="cat-result" onclick="quickAddCustom()" style="cursor:pointer">
+            <span class="nm">＋ Add “${esc(qRaw)}”</span>
+            <span class="ct">new item</span>
+            <button class="mini-add" onclick="event.stopPropagation();quickAddCustom()">＋</button>
+          </div>` : '';
+      document.getElementById('cat-results').innerHTML = customRow + (results.length
         ? results.map(r => `<div class="cat-result">
             <span class="nm" onclick="showCustomForm('${r.name.replace(/'/g, "\\'")}', '${r.cat.replace(/'/g, "\\'")}')">${esc(r.name)}</span>
             <span class="ct">${esc(r.cat)}</span>
             <button class="mini-add" onclick="quickAdd('${r.name.replace(/'/g, "\\'")}', '${r.cat.replace(/'/g, "\\'")}')">＋</button>
           </div>`).join('')
-        : `<div class="empty" style="padding:20px">No matches — try the custom form.</div>`;
+        : (qRaw ? '' : `<div class="empty" style="padding:20px">Type above to add anything.</div>`));
     }
 
     function setCatalogCat(c){
