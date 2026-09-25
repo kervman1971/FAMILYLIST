@@ -110,6 +110,7 @@
     .budget-bar > div{ height:100%; background:linear-gradient(90deg, var(--orange), #E08A00); border-radius:99px; transition:width .3s; }
     .budget-bar.over > div{ background:linear-gradient(90deg, var(--red), #C7431F); }
     .list-meta{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--muted); font-weight:600; flex-wrap:wrap; gap:6px; }
+    .mode-hint{ font-size:12px; color:var(--muted); font-weight:500; margin-top:6px; line-height:1.4; }
     .budget-line{ font-size:14px; font-weight:800; color:var(--ink); margin-top:8px; }
     .budget-line.over{ color:var(--red); }
     .link-btn{ background:none; border:0; color:var(--red); font-size:13px; font-weight:700; cursor:pointer; padding:6px; }
@@ -788,11 +789,14 @@
         <div class="list-meta"><span>${over ? '⚠️ Over budget!' : 'On track 👍'}</span><button class="link-btn orange" onclick="openBudgetSheet()">Edit budget</button></div>` : ''}
         <div class="list-meta" style="margin-top:10px">
           <span class="seg">
-            <button class="${(list.sortMode || 'category') === 'category' ? 'on' : ''}" onclick="setSortMode('category')">🗂️ Category</button>
-            <button class="${list.sortMode === 'store' ? 'on' : ''}" onclick="setSortMode('store')">🚶 Store walk</button>
+            <button class="${(list.sortMode || 'category') === 'category' ? 'on' : ''}" onclick="setSortMode('category')" title="Group items by category: Produce, Dairy, Meat…">🗂️ By category</button>
+            <button class="${list.sortMode === 'store' ? 'on' : ''}" onclick="setSortMode('store')" title="Order items the way you'd walk the store aisles">🚶 By store aisle</button>
           </span>
-          <button class="filter-chip${myFilter ? ' on' : ''}" onclick="toggleMyFilter()">${myFilter ? '✓ ' : ''}🙋 My items</button>
+          <button class="filter-chip${myFilter ? ' on' : ''}" onclick="toggleMyFilter()" title="Show only items assigned to ${esc(myName || 'you')}">${myFilter ? '✓ ' : ''}🙋 ${myName ? esc(myName) + '’s items' : 'My items'}</button>
         </div>
+        <div class="mode-hint">${(list.sortMode || 'category') === 'store'
+          ? '🚶 Items are ordered like a walk through the store — custom aisle labels first, then the usual order. Set an aisle when editing an item.'
+          : '🗂️ Items are grouped by category. Tap 🚶 By store aisle to reorder them the way you’d walk the shop.'}</div>
       </div>`;
 
       // quick-add bar
